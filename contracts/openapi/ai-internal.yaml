@@ -1,0 +1,113 @@
+openapi: 3.1.0
+info:
+  title: EKAA AI Internal API
+  version: 1.0.0
+  description: Internal endpoints on Python FastAPI consumed by Laravel Core (§17.4).
+servers:
+  - url: http://ai-api:8000/internal/v1
+    description: Internal Docker App Network
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: AI Service is operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  service: { type: string, example: "ekaa-ai" }
+
+  /ingestions:
+    post:
+      summary: Dispatch asynchronous document ingestion job
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+        - name: X-Correlation-Id
+          in: header
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id, version_id, storage_key, acl_principals, status]
+              properties:
+                document_id: { type: string, format: uuid }
+                version_id: { type: string, format: uuid }
+                storage_key: { type: string }
+                acl_principals: { type: array, items: { type: string } }
+                status: { type: string, enum: [active, draft, revoked] }
+      responses:
+        '202':
+          description: Ingestion job queued in ai.jobs
+
+  /documents/{id}/acl:
+    put:
+      summary: Synchronous update of acl_principals across all chunks of document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [acl_principals]
+              properties:
+                acl_principals: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: ACL successfully updated in ai.chunks
+
+  /documents/{id}/status:
+    put:
+      summary: Synchronous update of document status (active or revoked) and is_current
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, is_current]
+              properties:
+                status: { type: string, enum: [active, revoked] }
+                is_current: { type: boolean }
+      responses:
+        '200':
+          description: Status updated
+
+  /ask:
+    post:
+      summary: Hybrid Router, Multi-stage Retrieval, Reranking, and Generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/ask_request.json'
+      responses:
+        '200':
+          description: Answer with citations or deterministic analytics result
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ask_response.json'
+        '503':
+          description: AI Service or LLM provider unavailable
