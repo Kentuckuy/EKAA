@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EKAAAskRequest",
+  "description": "Internal Request Schema for POST /internal/v1/ask (§17.4)",
+  "type": "object",
+  "required": ["query", "access"],
+  "additionalProperties": false,
+  "properties": {
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "conversation_context": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": { "type": "string", "enum": ["user", "assistant"] },
+          "content": { "type": "string" }
+        }
+      }
+    },
+    "access": {
+      "type": "object",
+      "required": ["principals"],
+      "additionalProperties": false,
+      "properties": {
+        "principals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Principals set (all, user:<id>, role:<id>, unit:<id> + parents). If empty, returns ZERO results."
+        },
+        "allowed_dataset_ids": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" }
+        }
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "top_k": { "type": "integer", "default": 8 },
+        "language": { "type": "string", "default": "id" },
+        "route_hint": { "type": "string", "enum": ["document", "analytics"] }
+      }
+    }
+  }
+}
