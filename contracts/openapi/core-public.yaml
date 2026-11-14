@@ -1,0 +1,231 @@
+openapi: 3.1.0
+info:
+  title: EKAA Core Public API
+  version: 1.0.0
+  description: Public API exposed by Laravel Core to Vue SPA and authenticated clients (§17.3).
+servers:
+  - url: https://localhost/api/v1
+    description: Production / Local Reverse Proxy Gateway
+
+paths:
+  /health:
+    get:
+      summary: Public Healthcheck
+      responses:
+        '200':
+          description: System healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  timestamp: { type: string, format: date-time }
+
+  /auth/login:
+    post:
+      summary: User Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: HttpOnly, Secure, SameSite=Strict refresh token cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string, description: "Opaque ~15m memory-only access token" }
+                  token_type: { type: string, example: "Bearer" }
+                  expires_in: { type: integer, example: 900 }
+                  must_change_password: { type: boolean }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+                      email: { type: string }
+                      roles: { type: array, items: { type: string } }
+        '401':
+          $ref: '#/components/responses/UniformError'
+        '429':
+          $ref: '#/components/responses/UniformError'
+
+  /auth/refresh:
+    post:
+      summary: Refresh Access Token (Rotating refresh token in HttpOnly cookie)
+      responses:
+        '200':
+          description: Refreshed token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  expires_in: { type: integer, example: 900 }
+        '401':
+          $ref: '#/components/responses/UniformError'
+
+  /auth/logout:
+    post:
+      summary: Invalidate user session & refresh token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out
+
+  /me:
+    get:
+      summary: Current user profile and principals
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile and calculated principals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  name: { type: string }
+                  email: { type: string }
+                  roles: { type: array, items: { type: string } }
+                  principals: { type: array, items: { type: string } }
+
+  /documents:
+    get:
+      summary: List accessible documents
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: List of documents
+    post:
+      summary: Upload document (Knowledge Manager only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, title]
+              properties:
+                title: { type: string }
+                file: { type: string, format: binary }
+                effective_date: { type: string, format: date }
+      responses:
+        '202':
+          description: Document accepted for scanning & ingestion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      version_id: { type: string, format: uuid }
+                      status: { type: string, example: "pending" }
+
+  /conversations:
+    get:
+      summary: List user conversations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User conversation list
+    post:
+      summary: Create conversation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+      responses:
+        '201':
+          description: Conversation created
+
+  /conversations/{id}/messages:
+    post:
+      summary: Send question in conversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+                route_hint: { type: string, enum: [document, analytics] }
+      responses:
+        '200':
+          description: Verified assistant response with citations or metrics
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ask_response.json'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  responses:
+    UniformError:
+      description: Uniform Error Format (§17.2)
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, correlation_id]
+                properties:
+                  code: { type: string, example: "FORBIDDEN" }
+                  message: { type: string, example: "Anda tidak memiliki izin untuk aksi ini." }
+                  details: { type: array, items: { type: string } }
+                  correlation_id: { type: string, example: "c1f3a2b4-5678-..." }
