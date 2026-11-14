@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EKAAAskResponse",
+  "description": "Internal Response Schema for POST /internal/v1/ask (§17.4)",
+  "type": "object",
+  "required": ["route", "status", "answer", "trace_id"],
+  "additionalProperties": false,
+  "properties": {
+    "route": {
+      "type": "string",
+      "enum": ["document", "analytics", "out_of_scope", "clarification_required"]
+    },
+    "route_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["answered", "no_evidence", "clarification_required", "out_of_scope"]
+    },
+    "answer": {
+      "type": "string"
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["document_id", "version_id", "chunk_id", "page_start", "page_end", "section_path", "excerpt"],
+        "properties": {
+          "document_id": { "type": "string", "format": "uuid" },
+          "version_id": { "type": "string", "format": "uuid" },
+          "chunk_id": { "type": "string", "format": "uuid" },
+          "page_start": { "type": "integer" },
+          "page_end": { "type": "integer" },
+          "section_path": { "type": "string" },
+          "excerpt": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string" }
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "properties": {
+        "metric_code": { "type": "string" },
+        "value": {},
+        "unit": { "type": "string" },
+        "formula": { "type": "string" },
+        "inputs": { "type": "object" },
+        "source": { "type": "string" },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "executed_sql": { "type": "string" }
+      }
+    },
+    "table": {
+      "type": "object",
+      "properties": {
+        "columns": { "type": "array", "items": { "type": "string" } },
+        "rows": { "type": "array", "items": { "type": "array" } }
+      }
+    },
+    "chart_spec": {
+      "type": "object"
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "model_info": {
+      "type": "object",
+      "properties": {
+        "model": { "type": "string" },
+        "prompt_version": { "type": "string" },
+        "provider": { "type": "string" }
+      }
+    }
+  }
+}
