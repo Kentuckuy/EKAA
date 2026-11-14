@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  title: EKAA Core Internal API
+  version: 1.0.0
+  description: Internal endpoints on Laravel Core consumed by CodeIgniter Connector and AI Callbacks (§17.5).
+servers:
+  - url: http://app:8000/internal/v1
+    description: Internal Docker App Network
+
+paths:
+  /connector/items:
+    post:
+      summary: Handoff new or changed file from CodeIgniter connector
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+        - name: X-Correlation-Id
+          in: header
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [core_source_id, external_id, content_hash, file]
+              properties:
+                core_source_id: { type: string, format: uuid }
+                external_id: { type: string }
+                content_hash: { type: string }
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Item accepted and queued for ingestion
+
+  /connector/items/{external_id}/removed:
+    post:
+      summary: Report item removed from external source
+      parameters:
+        - name: external_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Document revocation handled
+
+  /ingestions/{id}/status:
+    post:
+      summary: Callback from AI worker on ingestion completion or failure
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [done, failed] }
+                chunk_count: { type: integer }
+                error: { type: string }
+      responses:
+        '200':
+          description: Status acknowledged
