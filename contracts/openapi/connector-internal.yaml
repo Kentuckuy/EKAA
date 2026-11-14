@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  title: EKAA Connector Internal API
+  version: 1.0.0
+  description: Internal endpoints on CodeIgniter 4 Connector & Sync consumed by Laravel Core (§17.5).
+servers:
+  - url: http://connector:8080/internal/v1
+    description: Internal Docker App Network
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Connector Service is operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  service: { type: string, example: "ekaa-connector" }
+
+  /sources:
+    post:
+      summary: Register or update external source configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [core_source_id, type, schedule]
+              properties:
+                core_source_id: { type: string, format: uuid }
+                type: { type: string, enum: [folder, sftp, smb] }
+                config: { type: object }
+                credentials: { type: string, description: "Will be encrypted with sodium" }
+                schedule: { type: string }
+      responses:
+        '200':
+          description: Source configured
+
+  /sources/{id}/sync:
+    post:
+      summary: Trigger manual or scheduled sync run
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '202':
+          description: Sync run started
+
+  /sources/{id}/runs:
+    get:
+      summary: Get sync runs history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of sync runs
