@@ -1,0 +1,92 @@
+name: EKAA Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Security & Secret Scanning (Invarian 18, DEC-043)
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Secret & Dependency Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks Secret Detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # 2. Database & Contract Tests (AC-M0-03, AC-M0-04, AC-M0-05)
+  # ---------------------------------------------------------------------------
+  contracts-and-isolation:
+    name: Contracts, JWT & Database Isolation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Database Isolation Tests (AC-M0-03)
+        run: node tests/security/test_db_isolation.js
+
+      - name: Run Service JWT Tests (AC-M0-05)
+        run: node tests/security/test_service_jwt.js
+
+  # ---------------------------------------------------------------------------
+  # 3. AI Service Tests & Linting
+  # ---------------------------------------------------------------------------
+  ai-service:
+    name: AI Service Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: services/ai
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Run Ruff Linter
+        working-directory: services/ai
+        run: ruff check .
+
+      - name: Run Type Checker
+        working-directory: services/ai
+        run: mypy ekaa_ai
+
+  # ---------------------------------------------------------------------------
+  # 4. Frontend SPA Type Checking
+  # ---------------------------------------------------------------------------
+  web-spa:
+    name: Web Frontend Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install & Validate TypeScript
+        working-directory: apps/web
+        run: |
+          npm install
+          npm run build
