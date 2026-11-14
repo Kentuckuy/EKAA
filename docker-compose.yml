@@ -1,0 +1,286 @@
+# =============================================================================
+# EKAA Docker Compose Configuration (§13.2, §32.2, DEC-015, DEC-049)
+# Single-tenant Private Knowledge & Analytics Assistant
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. Reverse Proxy (Caddy: DEC-036, only port 443 and 80 published)
+  # ---------------------------------------------------------------------------
+  proxy:
+    image: caddy:2.9.1-alpine
+    container_name: ekaa-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app-net
+    depends_on:
+      web:
+        condition: service_started
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # 2. Frontend SPA (Vue 3 + Vite: DEC-012, DEC-042)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: ekaa-web
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # 3. Core Backend (Laravel 13 / PHP 8.4: DEC-003, DEC-017)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: ./apps/core
+      dockerfile: Dockerfile
+    container_name: ekaa-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - CONTAINER_ROLE=app
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      objectstore:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "artisan", "ekaa:health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  queue-worker:
+    build:
+      context: ./apps/core
+      dockerfile: Dockerfile
+    container_name: ekaa-queue-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - CONTAINER_ROLE=queue
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      app:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ./apps/core
+      dockerfile: Dockerfile
+    container_name: ekaa-scheduler
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - CONTAINER_ROLE=scheduler
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # 4. Connector & Sync Service (CodeIgniter 4.7 / PHP 8.4: DEC-004, DEC-017)
+  # ---------------------------------------------------------------------------
+  connector:
+    build:
+      context: ./apps/connector
+      dockerfile: Dockerfile
+    container_name: ekaa-connector
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - connector_sources:/var/ekaa/sources:ro
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "spark", "health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # 5. AI API & AI Worker (FastAPI / Python 3.12: DEC-005, DEC-032)
+  # ---------------------------------------------------------------------------
+  ai-api:
+    build:
+      context: ./services/ai
+      dockerfile: Dockerfile
+    container_name: ekaa-ai-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SERVICE_ROLE=api
+    volumes:
+      - duckdb_volume:/data/duckdb:ro
+      - ai_models_cache:/root/.cache
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/internal/v1/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  ai-worker:
+    build:
+      context: ./services/ai
+      dockerfile: Dockerfile
+    container_name: ekaa-ai-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SERVICE_ROLE=worker
+    volumes:
+      - duckdb_volume:/data/duckdb
+      - ai_models_cache:/root/.cache
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      objectstore:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # 6. Database (PostgreSQL 17 + pgvector 0.8.0: DEC-007, DEC-008)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg17-v0.8.0
+    container_name: ekaa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-ekaa}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_dev_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - data-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-ekaa}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # 7. Cache & Queue (Valkey 8.0: DEC-035, BSD-3-Clause)
+  # ---------------------------------------------------------------------------
+  valkey:
+    image: valkey/valkey:8.0.2-alpine
+    container_name: ekaa-valkey
+    restart: unless-stopped
+    command: ["valkey-server", "--requirepass", "${VALKEY_PASSWORD:-valkey_dev_password}"]
+    volumes:
+      - valkey_data:/data
+    networks:
+      - data-net
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD:-valkey_dev_password}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # 8. S3-Compatible Object Store (SeaweedFS: DEC-034, Apache-2.0)
+  # ---------------------------------------------------------------------------
+  objectstore:
+    image: chrislusf/seaweedfs:3.85
+    container_name: ekaa-objectstore
+    restart: unless-stopped
+    command: ["server", "-s3", "-dir=/data"]
+    environment:
+      - WEED_S3_ENABLED=true
+    volumes:
+      - seaweedfs_data:/data
+    networks:
+      - data-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8333/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # 9. Malware Scanner (ClamAV: DEC-038)
+  # ---------------------------------------------------------------------------
+  clamav:
+    image: clamav/clamav:1.4.2
+    container_name: ekaa-clamav
+    restart: unless-stopped
+    volumes:
+      - clamav_db:/var/lib/clamav
+    networks:
+      - data-net
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "127.0.0.1:3310"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# Networks & Volumes (§13.2, §32.1: data-net has NO external egress route)
+# =============================================================================
+networks:
+  app-net:
+    driver: bridge
+    internal: false
+  data-net:
+    driver: bridge
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  valkey_data:
+  seaweedfs_data:
+  clamav_db:
+  ai_models_cache:
+  duckdb_volume:
+  connector_sources:
