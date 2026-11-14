@@ -1,0 +1,48 @@
+# =============================================================================
+# EKAA Caddyfile Configuration (DEC-036, §30.5, §32.1)
+# Enforces TLS, Strict Security Headers, and Internal API Isolation
+# =============================================================================
+
+{
+    admin off
+    auto_https disable_redirects
+}
+
+:443 {
+    tls internal
+
+    # Strict Security Headers (§30.5)
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    }
+
+    # CRITICAL INVARIANT: Internal APIs (/internal/v1) are strictly FORBIDDEN to the outside world (§17.1)
+    @internal {
+        path /internal/*
+    }
+    respond @internal "Not Found" 404
+
+    # Public API route -> Laravel Core
+    handle /api/v1/* {
+        reverse_proxy app:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto https
+        }
+    }
+
+    # Static Frontend SPA -> Vue 3 Web
+    handle {
+        reverse_proxy web:80
+    }
+}
+
+:80 {
+    # Redirect all HTTP to HTTPS
+    redir https://{host}{uri} permanent
+}
