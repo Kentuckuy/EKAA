@@ -1,0 +1,30 @@
+{
+    "name": "ekaa/core",
+    "type": "project",
+    "description": "EKAA Core Backend & Single Identity Provider (Laravel 13, PHP 8.4)",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "laravel/framework": "^13.0",
+        "ramsey/uuid": "^4.7",
+        "league/flysystem-aws-s3-v3": "^3.0",
+        "firebase/php-jwt": "^6.10"
+    },
+    "require-dev": {
+        "pestphp/pest": "^3.0",
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.18"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
