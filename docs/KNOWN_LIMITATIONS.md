@@ -3,7 +3,7 @@
 | Atribut | Nilai |
 |---|---|
 | Proyek | Enterprise Knowledge and Analytics Assistant (EKAA) |
-| Terakhir Diperbarui | 14 November 2026 (Milestone M0) |
+| Terakhir Diperbarui | 24 November 2026 (Milestone M8 — Rilis MVP) |
 | Prinsip | Transparansi Penuh (§3.4, §38, AC-M8-06) |
 
 Dokumen ini mencatat secara jujur seluruh keterbatasan fungsional dan teknis yang sengaja belum atau tidak diimplementasikan pada fase MVP sesuai keputusan arsitektur (DEC-020):
