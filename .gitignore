@@ -1,0 +1,52 @@
+# =============================================================================
+# EKAA .gitignore — Strict Secret, Dependency, and Artifact Exclusion
+# =============================================================================
+
+# Environment and Secrets (AC-M8-05)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
+deploy/secrets/
+
+# Dependencies
+/vendor/
+/node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs and Runtime Storage
+*.log
+logs/
+/storage/*.key
+/storage/app/
+/storage/framework/
+/storage/logs/
+
+# Backups and Local Dumps
+/backups/*.sql
+/backups/*.sql.gz
+*.duckdb
+*.parquet
+
+# Build Outputs
+/dist/
+/build/
+.vite/
+.nuxt/
+
+# OS and Editor metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
