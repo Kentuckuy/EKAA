@@ -50,13 +50,9 @@ _REL_TOLERANCE = 0.001      # 0.1 %
 _YEAR_RANGE = range(1900, 2101)
 
 # Regex to find numeric tokens in prose (including Indonesian punctuation)
-# Matches: optional minus, digits, optional (thousands-sep) groups, optional decimal
+# Matches numbers with optional minus, optional thousands/decimals, optional percent
 _NUMBER_RE = re.compile(
-    r"-?"                              # optional leading minus
-    r"\d{1,3}"                         # leading digits (1-3)
-    r"(?:[.,]\d{3})*"                  # optional thousands groups (. or ,)
-    r"(?:[.,]\d+)?"                    # optional decimal part
-    r"\s*%?"                           # optional trailing percent
+    r"-?\b\d+(?:[.,]\d+)*\s*%?\b"
 )
 
 
