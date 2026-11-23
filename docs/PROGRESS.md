@@ -3,10 +3,10 @@
 | Atribut | Nilai |
 |---|---|
 | Proyek | Enterprise Knowledge and Analytics Assistant (EKAA) |
-| Fase Aktif | **M6 — Router, Guardrails, Feedback** (§25, §26, §27) |
-| Status Proyek | **M0 s.d. M5 SELESAI (100% Bukti Terverifikasi)** -> Masuk ke M6 |
-| Tanggal | 23 November 2026 |
-| Terakhir Diperbarui | 23 November 2026 |
+| Fase Aktif | **M7 — Connector & Sync** (§20, §21, §22) |
+| Status Proyek | **M0 s.d. M6 SELESAI (100% Bukti Terverifikasi)** -> Masuk ke M7 |
+| Tanggal | 24 November 2026 |
+| Terakhir Diperbarui | 24 November 2026 |
 
 ---
 
@@ -20,8 +20,8 @@
 | **M3** | Ingestion dan Indeks | 4 minggu | **DONE** | AC-M3-01 s.d. AC-M3-09 ([`tests/reports/M3-ingestion-index-report.md`](file:///D:/EKAA/tests/reports/M3-ingestion-index-report.md)) |
 | **M4** | Retrieval, Jawaban, Chat | 4 minggu | **DONE** | AC-M4-01 s.d. AC-M4-09 ([`tests/reports/M4-baseline-rag-report.md`](file:///D:/EKAA/tests/reports/M4-baseline-rag-report.md)) |
 | **M5** | Analitik Deterministik | 4 minggu | **DONE** | AC-M5-01 s.d. AC-M5-09 ([`tests/reports/M5-analytics-deterministic-report.md`](file:///D:/EKAA/tests/reports/M5-analytics-deterministic-report.md)) |
-| **M6** | Router, Guardrails, Feedback | 3 minggu | **IN_PROGRESS** | AC-M6-01 s.d. AC-M6-06 (Aktif) |
-| **M7** | Connector & Sync | 2 minggu | `TODO` | AC-M7-01 s.d. AC-M7-07 |
+| **M6** | Router, Guardrails, Feedback | 3 minggu | **DONE** | AC-M6-01 s.d. AC-M6-06 ([`tests/reports/M6-router-guardrails-report.md`](file:///D:/EKAA/tests/reports/M6-router-guardrails-report.md)) |
+| **M7** | Connector & Sync | 2 minggu | **IN_PROGRESS** | AC-M7-01 s.d. AC-M7-07 (Aktif) |
 | **M8** | Pengerasan dan Rilis MVP | 3 minggu | `TODO` | AC-M8-01 s.d. AC-M8-06 |
 
 ---
@@ -58,14 +58,29 @@
 
 ---
 
-## 4. Matriks Acceptance Criteria Milestone M6 (Fase Aktif)
+## 4. Matriks Acceptance Criteria Milestone M6 (Selesai)
 
 | ID | Deskripsi Kriteria Penerimaan | Status | Tautan / Jalur Bukti |
 |---|---|---|---|
-| **AC-M6-01** | Evaluasi router pada test set menghasilkan akurasi routing terukur | `IN_PROGRESS` | `services/ai/ekaa_ai/domain/router/hybrid_router.py` |
-| **AC-M6-02** | Uji injeksi prompt dari test set tertolak tanpa membocorkan instruksi sistem atau data | `IN_PROGRESS` | `services/ai/ekaa_ai/domain/guardrails/injection_guard.py` |
-| **AC-M6-03** | Feedback thumbs up/down tersimpan dengan referensi pesan yang benar | `IN_PROGRESS` | `apps/core/app/Domain/Feedback/FeedbackService.php` |
-| **AC-M6-04** | Alasan feedback negatif terstruktur (tidak akurat, tidak lengkap, sitasi salah) | `IN_PROGRESS` | Validasi skema feedback internal |
-| **AC-M6-05** | Pertanyaan klarifikasi diajukan bila maksud ambigu | `IN_PROGRESS` | Routing intent clarification |
-| **AC-M6-06** | Evaluasi gabungan RAG + Router + Guardrails dilaporkan | `IN_PROGRESS` | Laporan komprehensif M6 |
+| **AC-M6-01** | Evaluasi router pada test set menghasilkan akurasi routing terukur | **DONE** | [`services/ai/ekaa_ai/domain/router/hybrid_router.py`](file:///D:/EKAA/services/ai/ekaa_ai/domain/router/hybrid_router.py) |
+| **AC-M6-02** | Uji injeksi prompt dari test set tertolak tanpa membocorkan instruksi sistem atau data | **DONE** | [`services/ai/ekaa_ai/domain/guardrails/injection_guard.py`](file:///D:/EKAA/services/ai/ekaa_ai/domain/guardrails/injection_guard.py) |
+| **AC-M6-03** | Feedback thumbs up/down tersimpan dengan referensi pesan yang benar | **DONE** | [`apps/core/app/Domain/Feedback/FeedbackService.php`](file:///D:/EKAA/apps/core/app/Domain/Feedback/FeedbackService.php) |
+| **AC-M6-04** | Alasan feedback negatif terstruktur (tidak akurat, tidak lengkap, sitasi salah) | **DONE** | Enum alasan terstruktur kanonikal (`FeedbackService`) |
+| **AC-M6-05** | Pertanyaan klarifikasi diajukan bila maksud ambigu | **DONE** | Deteksi ambiguitas proaktif (< 0.60 confidence) |
+| **AC-M6-06** | Evaluasi gabungan RAG + Router + Guardrails dilaporkan | **DONE** | [`tests/reports/M6-router-guardrails-report.md`](file:///D:/EKAA/tests/reports/M6-router-guardrails-report.md) |
+
+---
+
+## 5. Matriks Acceptance Criteria Milestone M7 (Fase Aktif)
+
+| ID | Deskripsi Kriteria Penerimaan | Status | Tautan / Jalur Bukti |
+|---|---|---|---|
+| **AC-M7-01** | Sumber lokal memindai folder dan mendeteksi berkas baru/berubah/dihapus | `IN_PROGRESS` | `apps/connector/app/Domain/Sync/FolderScanner.php` |
+| **AC-M7-02** | Sinkronisasi menghasilkan status per berkas (success, failed, skipped) dengan ringkasan | `IN_PROGRESS` | `apps/connector/app/Controllers/SyncRuns.php` |
+| **AC-M7-03** | Berkas yang dihapus di sumber ditandai nonaktif/terhapus di Core | `IN_PROGRESS` | Sinkronisasi status penghapusan |
+| **AC-M7-04** | Berkas yang gagal diproses tidak menghentikan sinkronisasi berkas lain | `IN_PROGRESS` | Isolasi kegagalan per berkas (*fault isolation*) |
+| **AC-M7-05** | Handoff ke Core memakai service JWT dan idempotent key | `IN_PROGRESS` | `apps/connector/app/Domain/Sync/CoreHandoffClient.php` |
+| **AC-M7-06** | Riwayat sinkronisasi tersimpan dan dapat dilihat | `IN_PROGRESS` | Schema `connector.sync_runs` & `connector.sync_run_items` |
+| **AC-M7-07** | Batas laju sinkronisasi dihormati | `IN_PROGRESS` | Rate limiting & debounce interval sinkronisasi |
+
 
