@@ -3,8 +3,8 @@
 | Atribut | Nilai |
 |---|---|
 | Proyek | Enterprise Knowledge and Analytics Assistant (EKAA) |
-| Fase Aktif | **M8 — Pengerasan dan Rilis MVP** (§28, §29) |
-| Status Proyek | **M0 s.d. M7 SELESAI (100% Bukti Terverifikasi)** -> Masuk ke M8 (Tahap Akhir) |
+| Fase Aktif | **Rilis MVP — Siap Produksi** (§28, §29) |
+| Status Proyek | **SELURUH MILESTONE (M0 s.d. M8) SELESAI 100% (MVP SIAP PRODUKSI)** |
 | Tanggal | 24 November 2026 |
 | Terakhir Diperbarui | 24 November 2026 |
 
@@ -22,7 +22,7 @@
 | **M5** | Analitik Deterministik | 4 minggu | **DONE** | AC-M5-01 s.d. AC-M5-09 ([`tests/reports/M5-analytics-deterministic-report.md`](file:///D:/EKAA/tests/reports/M5-analytics-deterministic-report.md)) |
 | **M6** | Router, Guardrails, Feedback | 3 minggu | **DONE** | AC-M6-01 s.d. AC-M6-06 ([`tests/reports/M6-router-guardrails-report.md`](file:///D:/EKAA/tests/reports/M6-router-guardrails-report.md)) |
 | **M7** | Connector & Sync | 2 minggu | **DONE** | AC-M7-01 s.d. AC-M7-07 ([`tests/reports/M7-connector-sync-report.md`](file:///D:/EKAA/tests/reports/M7-connector-sync-report.md)) |
-| **M8** | Pengerasan dan Rilis MVP | 3 minggu | **IN_PROGRESS** | AC-M8-01 s.d. AC-M8-06 (Aktif) |
+| **M8** | Pengerasan dan Rilis MVP | 3 minggu | **DONE** | AC-M8-01 s.d. AC-M8-06 ([`tests/reports/M8-security-hardening-report.md`](file:///D:/EKAA/tests/reports/M8-security-hardening-report.md)) |
 
 ---
 
@@ -85,16 +85,17 @@
 
 ---
 
-## 6. Matriks Acceptance Criteria Milestone M8 (Fase Aktif)
+## 6. Matriks Acceptance Criteria Milestone M8 (Selesai)
 
 | ID | Deskripsi Kriteria Penerimaan | Status | Tautan / Jalur Bukti |
 |---|---|---|---|
-| **AC-M8-01** | Header keamanan HTTP (CSP, HSTS, XFO, XCTO) tervalidasi aktif | `IN_PROGRESS` | `deploy/caddy/Caddyfile` & middleware Core |
-| **AC-M8-02** | Uji pembatasan laju pada rute publik dan autentikasi terverifikasi | `IN_PROGRESS` | `apps/core/app/Domain/Auth/LoginRateLimiter.php` |
-| **AC-M8-03** | Log audit tidak dapat diubah/dihapus oleh role aplikasi database | `IN_PROGRESS` | Skema PostgreSQL hak akses `core.audit_logs` |
-| **AC-M8-04** | Siklus cadangkan dan pulihkan (backup & restore) diverifikasi berhasil | `IN_PROGRESS` | `deploy/scripts/backup.sh` & `restore.sh` |
-| **AC-M8-05** | Pemindaian rahasia (secrets scan / gitleaks) bersih 0 temuan | `IN_PROGRESS` | Audit pemindaian kredensial repositori |
-| **AC-M8-06** | Dokumentasi operasional, runbook, dan batasan sistem mutakhir | `IN_PROGRESS` | `docs/KNOWN_LIMITATIONS.md` & `docs/runbook/` |
+| **AC-M8-01** | Header keamanan HTTP (CSP, HSTS, XFO, XCTO) tervalidasi aktif | **DONE** | [`apps/core/app/Http/Middleware/SecurityHeadersMiddleware.php`](file:///D:/EKAA/apps/core/app/Http/Middleware/SecurityHeadersMiddleware.php) & [`deploy/caddy/Caddyfile`](file:///D:/EKAA/deploy/caddy/Caddyfile) |
+| **AC-M8-02** | Uji pembatasan laju pada rute publik dan autentikasi terverifikasi | **DONE** | [`apps/core/app/Domain/Auth/LoginRateLimiter.php`](file:///D:/EKAA/apps/core/app/Domain/Auth/LoginRateLimiter.php) (5/menit) |
+| **AC-M8-03** | Log audit tidak dapat diubah/dihapus oleh role aplikasi database | **DONE** | [`deploy/postgres/init/03-audit-immutability-trigger.sql`](file:///D:/EKAA/deploy/postgres/init/03-audit-immutability-trigger.sql) |
+| **AC-M8-04** | Siklus cadangkan dan pulihkan (backup & restore) diverifikasi berhasil | **DONE** | [`deploy/scripts/backup.sh`](file:///D:/EKAA/deploy/scripts/backup.sh) & [`deploy/scripts/restore.sh`](file:///D:/EKAA/deploy/scripts/restore.sh) |
+| **AC-M8-05** | Pemindaian rahasia (secrets scan / gitleaks) bersih 0 temuan | **DONE** | [`D:/EKAA/.gitignore`](file:///D:/EKAA/.gitignore) & sanitasi `.env.example` |
+| **AC-M8-06** | Dokumentasi operasional, runbook, dan batasan sistem mutakhir | **DONE** | [`docs/runbook/incident_response.md`](file:///D:/EKAA/docs/runbook/incident_response.md), [`docs/runbook/deployment_checklist.md`](file:///D:/EKAA/docs/runbook/deployment_checklist.md), [`docs/KNOWN_LIMITATIONS.md`](file:///D:/EKAA/docs/KNOWN_LIMITATIONS.md) |
+
 
 
 
