@@ -3,8 +3,8 @@
 | Atribut | Nilai |
 |---|---|
 | Proyek | Enterprise Knowledge and Analytics Assistant (EKAA) |
-| Fase Aktif | **M7 — Connector & Sync** (§20, §21, §22) |
-| Status Proyek | **M0 s.d. M6 SELESAI (100% Bukti Terverifikasi)** -> Masuk ke M7 |
+| Fase Aktif | **M8 — Pengerasan dan Rilis MVP** (§28, §29) |
+| Status Proyek | **M0 s.d. M7 SELESAI (100% Bukti Terverifikasi)** -> Masuk ke M8 (Tahap Akhir) |
 | Tanggal | 24 November 2026 |
 | Terakhir Diperbarui | 24 November 2026 |
 
@@ -21,8 +21,8 @@
 | **M4** | Retrieval, Jawaban, Chat | 4 minggu | **DONE** | AC-M4-01 s.d. AC-M4-09 ([`tests/reports/M4-baseline-rag-report.md`](file:///D:/EKAA/tests/reports/M4-baseline-rag-report.md)) |
 | **M5** | Analitik Deterministik | 4 minggu | **DONE** | AC-M5-01 s.d. AC-M5-09 ([`tests/reports/M5-analytics-deterministic-report.md`](file:///D:/EKAA/tests/reports/M5-analytics-deterministic-report.md)) |
 | **M6** | Router, Guardrails, Feedback | 3 minggu | **DONE** | AC-M6-01 s.d. AC-M6-06 ([`tests/reports/M6-router-guardrails-report.md`](file:///D:/EKAA/tests/reports/M6-router-guardrails-report.md)) |
-| **M7** | Connector & Sync | 2 minggu | **IN_PROGRESS** | AC-M7-01 s.d. AC-M7-07 (Aktif) |
-| **M8** | Pengerasan dan Rilis MVP | 3 minggu | `TODO` | AC-M8-01 s.d. AC-M8-06 |
+| **M7** | Connector & Sync | 2 minggu | **DONE** | AC-M7-01 s.d. AC-M7-07 ([`tests/reports/M7-connector-sync-report.md`](file:///D:/EKAA/tests/reports/M7-connector-sync-report.md)) |
+| **M8** | Pengerasan dan Rilis MVP | 3 minggu | **IN_PROGRESS** | AC-M8-01 s.d. AC-M8-06 (Aktif) |
 
 ---
 
@@ -71,16 +71,30 @@
 
 ---
 
-## 5. Matriks Acceptance Criteria Milestone M7 (Fase Aktif)
+## 5. Matriks Acceptance Criteria Milestone M7 (Selesai)
 
 | ID | Deskripsi Kriteria Penerimaan | Status | Tautan / Jalur Bukti |
 |---|---|---|---|
-| **AC-M7-01** | Sumber lokal memindai folder dan mendeteksi berkas baru/berubah/dihapus | `IN_PROGRESS` | `apps/connector/app/Domain/Sync/FolderScanner.php` |
-| **AC-M7-02** | Sinkronisasi menghasilkan status per berkas (success, failed, skipped) dengan ringkasan | `IN_PROGRESS` | `apps/connector/app/Controllers/SyncRuns.php` |
-| **AC-M7-03** | Berkas yang dihapus di sumber ditandai nonaktif/terhapus di Core | `IN_PROGRESS` | Sinkronisasi status penghapusan |
-| **AC-M7-04** | Berkas yang gagal diproses tidak menghentikan sinkronisasi berkas lain | `IN_PROGRESS` | Isolasi kegagalan per berkas (*fault isolation*) |
-| **AC-M7-05** | Handoff ke Core memakai service JWT dan idempotent key | `IN_PROGRESS` | `apps/connector/app/Domain/Sync/CoreHandoffClient.php` |
-| **AC-M7-06** | Riwayat sinkronisasi tersimpan dan dapat dilihat | `IN_PROGRESS` | Schema `connector.sync_runs` & `connector.sync_run_items` |
-| **AC-M7-07** | Batas laju sinkronisasi dihormati | `IN_PROGRESS` | Rate limiting & debounce interval sinkronisasi |
+| **AC-M7-01** | Sumber lokal memindai folder dan mendeteksi berkas baru/berubah/dihapus | **DONE** | [`apps/connector/app/Domain/Sync/FolderScanner.php`](file:///D:/EKAA/apps/connector/app/Domain/Sync/FolderScanner.php) |
+| **AC-M7-02** | Sinkronisasi menghasilkan status per berkas (success, failed, skipped) dengan ringkasan | **DONE** | [`apps/connector/app/Controllers/SyncRuns.php`](file:///D:/EKAA/apps/connector/app/Controllers/SyncRuns.php) |
+| **AC-M7-03** | Berkas yang dihapus di sumber ditandai nonaktif/terhapus di Core | **DONE** | Sinkronisasi aksi `delete` ke Core |
+| **AC-M7-04** | Berkas yang gagal diproses tidak menghentikan sinkronisasi berkas lain | **DONE** | Isolasi kegagalan per berkas (*fault isolation*) |
+| **AC-M7-05** | Handoff ke Core memakai service JWT dan idempotent key | **DONE** | [`apps/connector/app/Domain/Sync/CoreHandoffClient.php`](file:///D:/EKAA/apps/connector/app/Domain/Sync/CoreHandoffClient.php) |
+| **AC-M7-06** | Riwayat sinkronisasi tersimpan dan dapat dilihat | **DONE** | Catatan `run_id` dan ringkasan eksekusi |
+| **AC-M7-07** | Batas laju sinkronisasi dihormati | **DONE** | Penolakan `429 TOO_MANY_REQUESTS` pada interval jeda (<60 detik) |
+
+---
+
+## 6. Matriks Acceptance Criteria Milestone M8 (Fase Aktif)
+
+| ID | Deskripsi Kriteria Penerimaan | Status | Tautan / Jalur Bukti |
+|---|---|---|---|
+| **AC-M8-01** | Header keamanan HTTP (CSP, HSTS, XFO, XCTO) tervalidasi aktif | `IN_PROGRESS` | `deploy/caddy/Caddyfile` & middleware Core |
+| **AC-M8-02** | Uji pembatasan laju pada rute publik dan autentikasi terverifikasi | `IN_PROGRESS` | `apps/core/app/Domain/Auth/LoginRateLimiter.php` |
+| **AC-M8-03** | Log audit tidak dapat diubah/dihapus oleh role aplikasi database | `IN_PROGRESS` | Skema PostgreSQL hak akses `core.audit_logs` |
+| **AC-M8-04** | Siklus cadangkan dan pulihkan (backup & restore) diverifikasi berhasil | `IN_PROGRESS` | `deploy/scripts/backup.sh` & `restore.sh` |
+| **AC-M8-05** | Pemindaian rahasia (secrets scan / gitleaks) bersih 0 temuan | `IN_PROGRESS` | Audit pemindaian kredensial repositori |
+| **AC-M8-06** | Dokumentasi operasional, runbook, dan batasan sistem mutakhir | `IN_PROGRESS` | `docs/KNOWN_LIMITATIONS.md` & `docs/runbook/` |
+
 
 
