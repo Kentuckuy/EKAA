@@ -97,10 +97,10 @@ class HybridRouter:
 
         q_lower = q.lower()
 
-        # Score matching categories
-        analytics_score = sum(1 for kw in ANALYTICS_KEYWORDS if kw in q_lower)
-        doc_score = sum(1 for kw in DOCUMENT_KEYWORDS if kw in q_lower)
-        out_of_scope_score = sum(1 for kw in OUT_OF_SCOPE_KEYWORDS if kw in q_lower)
+        # Score matching categories with word boundaries to avoid substring false positives
+        analytics_score = sum(1 for kw in ANALYTICS_KEYWORDS if re.search(rf"\b{re.escape(kw)}\b", q_lower))
+        doc_score = sum(1 for kw in DOCUMENT_KEYWORDS if re.search(rf"\b{re.escape(kw)}\b", q_lower))
+        out_of_scope_score = sum(1 for kw in OUT_OF_SCOPE_KEYWORDS if re.search(rf"\b{re.escape(kw)}\b", q_lower))
 
         # 1. Out of scope check
         if out_of_scope_score > 0 and analytics_score == 0 and doc_score == 0:
