@@ -103,6 +103,14 @@ async function handleUpload() {
   }
 }
 
+function toggleDocumentStatus(doc: DocumentItem) {
+  if (doc.status === 'active') {
+    doc.status = 'revoked'
+  } else {
+    doc.status = 'active'
+  }
+}
+
 onMounted(() => {
   fetchDocuments()
 })
@@ -139,6 +147,7 @@ onMounted(() => {
               <th class="py-3 px-4 font-semibold">Status Indeks AI</th>
               <th class="py-3 px-4 font-semibold">Tanggal Berlaku</th>
               <th class="py-3 px-4 font-semibold">Hak Akses (ACL Principals)</th>
+              <th v-if="authStore.isKnowledgeManager" class="py-3 px-4 font-semibold text-right">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-slate-800">
@@ -177,6 +186,15 @@ onMounted(() => {
                     {{ p }}
                   </span>
                 </div>
+              </td>
+              <td v-if="authStore.isKnowledgeManager" class="py-3 px-4 text-right">
+                <button
+                  @click="toggleDocumentStatus(doc)"
+                  :class="doc.status === 'active' ? 'text-rose-600 hover:text-rose-800' : 'text-emerald-600 hover:text-emerald-800'"
+                  class="font-semibold text-[11px] underline"
+                >
+                  {{ doc.status === 'active' ? 'Cabut Izin' : 'Aktifkan' }}
+                </button>
               </td>
             </tr>
           </tbody>
