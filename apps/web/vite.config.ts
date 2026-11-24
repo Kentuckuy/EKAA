@@ -16,7 +16,20 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (_err, _req, res: any) => {
+            if (!res.headersSent) {
+              res.writeHead(503, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({
+                error: {
+                  code: 'BACKEND_OFFLINE',
+                  message: 'Server backend di localhost:8000 belum aktif.'
+                }
+              }))
+            }
+          })
+        }
       }
     }
   }
