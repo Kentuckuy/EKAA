@@ -14,22 +14,9 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://ekaa.test',
         changeOrigin: true,
-        secure: false,
-        configure: (proxy) => {
-          proxy.on('error', (_err, _req, res: any) => {
-            if (!res.headersSent) {
-              res.writeHead(503, { 'Content-Type': 'application/json' })
-              res.end(JSON.stringify({
-                error: {
-                  code: 'BACKEND_OFFLINE',
-                  message: 'Server backend di localhost:8000 belum aktif.'
-                }
-              }))
-            }
-          })
-        }
+        secure: false
       }
     }
   }
