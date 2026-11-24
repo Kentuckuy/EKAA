@@ -20,13 +20,13 @@ const router = createRouter({
       path: '/analytics',
       name: 'analytics',
       component: () => import('@/features/analytics/AnalyticsView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, adminOnly: true }
     },
     {
       path: '/documents',
       name: 'documents',
       component: () => import('@/features/documents/DocumentsView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, adminOnly: true }
     },
     {
       path: '/audit',
@@ -59,7 +59,7 @@ router.beforeEach(async (to, from, next) => {
     return next({ name: 'chat' })
   }
 
-  // Jika rute khusus admin dan bukan admin, arahkan ke halaman utama
+  // Jika rute khusus admin dan pengguna bukan admin (hanya user biasa), kembalikan ke chat
   if (to.meta.adminOnly && !authStore.isOrgAdmin) {
     return next({ name: 'chat' })
   }
