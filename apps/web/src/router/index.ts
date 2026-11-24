@@ -44,19 +44,22 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
-  // Coba periksa sesi jika belum terautentikasi
-  if (!authStore.isAuthenticated) {
+  // Coba periksa sesi hanya pada inisialisasi awal dan bukan saat menuju rute tamu (login)
+  if (!authStore.hasCheckedInitialSession && !to.meta.guestOnly) {
     await authStore.checkSession()
   }
 
+  // Jika membutuhkan autentikasi tetapi belum login, arahkan ke login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 
+  // Jika rute hanya untuk tamu (login) tetapi sudah login, arahkan ke halaman utama
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     return next({ name: 'chat' })
   }
 
+  // Jika rute khusus admin dan bukan admin, arahkan ke halaman utama
   if (to.meta.adminOnly && !authStore.isOrgAdmin) {
     return next({ name: 'chat' })
   }
