@@ -25,7 +25,7 @@ async function handleLogin() {
   try {
     await authStore.login(email.value, password.value)
     const redirect = (route.query.redirect as string) || '/'
-    router.push(redirect)
+    await router.replace(redirect)
   } catch (err: any) {
     if (err instanceof ApiError) {
       if (err.status === 429) {
@@ -36,21 +36,18 @@ async function handleLogin() {
         errorMessage.value = err.message || 'Gagal masuk ke sistem.'
       }
     } else {
-      errorMessage.value = 'Tidak dapat terhubung ke server backend EKAA.'
+      errorMessage.value = 'Gagal terhubung ke server Laragon EKAA.'
     }
   } finally {
     isSubmitting.value = false
   }
 }
 
-function fillDemo(role: 'admin' | 'analyst' | 'user') {
+function fillDemo(role: 'admin' | 'user') {
   errorMessage.value = ''
   if (role === 'admin') {
     email.value = 'admin@ekaa.internal'
     password.value = 'AdminPass123!'
-  } else if (role === 'analyst') {
-    email.value = 'analyst@ekaa.internal'
-    password.value = 'AnalystPass123!'
   } else {
     email.value = 'user@ekaa.internal'
     password.value = 'UserPass123!'
@@ -129,30 +126,32 @@ function fillDemo(role: 'admin' | 'analyst' | 'user') {
         </button>
       </form>
 
-      <!-- Demo Account Quick Select -->
-      <div class="pt-4 border-t border-slate-100 text-center">
-        <p class="text-[11px] text-slate-400 font-medium mb-2.5">Pilih akun demonstrasi cepat:</p>
-        <div class="flex justify-center space-x-2">
+      <!-- Demo Account Quick Select (Hanya Admin dan User Sesuai Arahan) -->
+      <div class="pt-4 border-t border-slate-100">
+        <p class="text-[11px] text-slate-500 font-medium mb-3 text-center">Pilih peran akun untuk masuk:</p>
+        <div class="grid grid-cols-2 gap-2.5">
           <button
             type="button"
             @click="fillDemo('admin')"
-            class="px-2.5 py-1 text-[11px] rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium"
+            class="p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-left transition-all group"
           >
-            Admin
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-emerald-700">Akun Admin</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1">Akses Lengkap: Chat, CRUD Dokumen, Analitik Data, & Audit Log</p>
           </button>
-          <button
-            type="button"
-            @click="fillDemo('analyst')"
-            class="px-2.5 py-1 text-[11px] rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium"
-          >
-            Analyst
-          </button>
+
           <button
             type="button"
             @click="fillDemo('user')"
-            class="px-2.5 py-1 text-[11px] rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium"
+            class="p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-left transition-all group"
           >
-            User
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700">Akun User</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1">Akses Khusus: Tanya-Jawab Dokumen Organisasi (Chat RAG)</p>
           </button>
         </div>
       </div>
