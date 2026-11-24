@@ -134,6 +134,9 @@ function exportCsv() {
 
 onMounted(() => {
   runAnalysis()
+  window.addEventListener('resize', () => {
+    chartInstance.value?.resize()
+  })
 })
 </script>
 
