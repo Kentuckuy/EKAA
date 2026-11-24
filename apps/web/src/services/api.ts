@@ -2,7 +2,10 @@
  * EKAA Core API HTTP Client
  * Mematuhi Invarian §27.3: Access token disimpan HANYA di memori.
  * Refresh token berputar melalui HttpOnly cookie otomatis.
+ * Dilengkapi graceful mock fallback untuk mode pengembangan saat backend offline.
  */
+
+import { getMockResponse } from './mock'
 
 export interface UniformErrorResponse {
   error: {
@@ -75,7 +78,20 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
 
   const url = endpoint.startsWith('http') ? endpoint : `/api/v1${endpoint.startsWith('/') ? '' : '/'}${endpoint}`
 
-  const response = await fetch(url, options)
+  let response: Response
+  try {
+    response = await fetch(url, options)
+  } catch (networkError) {
+    // Backend offline / jaringan terputus -> gunakan mock otomatis di dev
+    console.warn(`[EKAA DEV] Backend port 8000 offline, menggunakan mock data untuk: ${endpoint}`)
+    return getMockResponse(endpoint, options) as T
+  }
+
+  // Jika proxy Vite mengembalikan 502/503 (backend port 8000 belum menyala)
+  if (response.status === 502 || response.status === 503) {
+    console.warn(`[EKAA DEV] Proxy gateway mendeteksi backend belum siap (${response.status}), beralih ke mock fallback: ${endpoint}`)
+    return getMockResponse(endpoint, options) as T
+  }
 
   // Tangani 401 Unauthorized dan putar refresh token jika token kadaluarsa
   if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/refresh')) {
