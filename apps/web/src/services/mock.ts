@@ -4,10 +4,18 @@
  * sehingga pengguna tetap dapat menguji seluruh antarmuka web tanpa error.
  */
 
+let mockSessionUser: any = null
+
 export function getMockResponse(endpoint: string, options: RequestInit = {}): any {
   const method = (options.method || 'GET').toUpperCase()
 
-  // 1. Login
+  // 1. Logout: reset sesi mock
+  if (endpoint.includes('/auth/logout') && method === 'POST') {
+    mockSessionUser = null
+    return { status: 'logged_out' }
+  }
+
+  // 2. Login: bentuk sesi sesuai akun yang dipilih
   if (endpoint.includes('/auth/login') && method === 'POST') {
     let email = 'user@ekaa.internal'
     try {
@@ -20,44 +28,46 @@ export function getMockResponse(endpoint: string, options: RequestInit = {}): an
     const isAdm = email.includes('admin')
     const isAnalyst = email.includes('analyst')
 
-    const roles = isAdm ? ['org_admin'] : isAnalyst ? ['data_analyst'] : ['standard_user']
+    const roles = isAdm ? ['org_admin', 'knowledge_manager'] : isAnalyst ? ['data_analyst'] : ['standard_user']
     const name = isAdm ? 'Administrator Organisasi' : isAnalyst ? 'Analis Data EKAA' : 'Staf Standar'
+
+    mockSessionUser = {
+      id: 'usr-' + (isAdm ? 'adm-01' : isAnalyst ? 'ana-01' : 'std-01'),
+      name: name,
+      email: email,
+      roles: roles,
+      principals: isAdm ? ['all', 'role:org_admin', 'unit:direksi'] : ['all', 'role:standard_user']
+    }
 
     return {
       access_token: 'mock-jwt-token-' + Date.now(),
       token_type: 'Bearer',
       expires_in: 900,
       must_change_password: false,
-      user: {
-        id: 'usr-' + (isAdm ? 'adm-01' : isAnalyst ? 'ana-01' : 'std-01'),
-        name: name,
-        email: email,
-        roles: roles,
-        principals: isAdm ? ['all', 'role:org_admin', 'unit:direksi'] : ['all', 'role:standard_user']
-      }
+      user: mockSessionUser
     }
   }
 
-  // 2. Refresh Token
+  // 3. Refresh Token
   if (endpoint.includes('/auth/refresh') && method === 'POST') {
+    if (!mockSessionUser) {
+      throw new Error('Tidak ada sesi aktif')
+    }
     return {
       access_token: 'mock-refreshed-jwt-' + Date.now(),
       expires_in: 900
     }
   }
 
-  // 3. User Profile (/me)
+  // 4. User Profile (/me)
   if (endpoint.includes('/me') && method === 'GET') {
-    return {
-      id: 'usr-current',
-      name: 'Pengguna EKAA (Demo Mode)',
-      email: 'user@ekaa.internal',
-      roles: ['org_admin', 'knowledge_manager', 'data_analyst'],
-      principals: ['all', 'role:org_admin', 'unit:teknologi']
+    if (!mockSessionUser) {
+      throw new Error('Unauthorized')
     }
+    return mockSessionUser
   }
 
-  // 4. Dokumen
+  // 5. Dokumen
   if (endpoint.includes('/documents') && method === 'GET') {
     return [
       {
@@ -93,7 +103,7 @@ export function getMockResponse(endpoint: string, options: RequestInit = {}): an
     ]
   }
 
-  // 5. Upload Dokumen
+  // 6. Upload Dokumen
   if (endpoint.includes('/documents') && method === 'POST') {
     return {
       data: {
@@ -104,7 +114,7 @@ export function getMockResponse(endpoint: string, options: RequestInit = {}): an
     }
   }
 
-  // 6. Audit Logs
+  // 7. Audit Logs
   if (endpoint.includes('/audit-logs')) {
     return [
       {
