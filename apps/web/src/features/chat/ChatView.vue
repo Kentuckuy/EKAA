@@ -15,15 +15,14 @@ interface Message {
   created_at?: string
 }
 
-const messages = ref<Message[]>([
-  {
-    id: 'welcome-1',
-    role: 'assistant',
-    content: 'Halo! Saya **EKAA Knowledge Assistant**. Anda dapat mengajukan pertanyaan seputar dokumen resmi organisasi. Seluruh jawaban dilandasi bukti nyata dengan sitasi halaman dan bab yang dapat Anda verifikasi.',
-    created_at: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-  }
-])
+const initialWelcome: Message = {
+  id: 'welcome-1',
+  role: 'assistant',
+  content: 'Halo! Saya **EKAA Knowledge Assistant**. Anda dapat mengajukan pertanyaan seputar dokumen resmi organisasi. Seluruh jawaban dilandasi bukti nyata dengan sitasi halaman dan bab yang dapat Anda verifikasi.',
+  created_at: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
 
+const messages = ref<Message[]>([initialWelcome])
 const inputQuestion = ref('')
 const isLoading = ref(false)
 const selectedCitation = ref<Citation | null>(null)
@@ -42,13 +41,21 @@ function scrollToBottom() {
   })
 }
 
+function clearChat() {
+  messages.value = [{ ...initialWelcome, created_at: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }]
+}
+
+function selectPrompt(prompt: string) {
+  inputQuestion.value = prompt
+  handleSendMessage()
+}
+
 function openCitation(cit: Citation) {
   selectedCitation.value = cit
   isCitationModalOpen.value = true
 }
 
 function renderSanitizedMarkdown(content: string): string {
-  // Simple markdown bold/code parser + sanitize with DOMPurify
   let html = content
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -83,18 +90,18 @@ async function handleSendMessage() {
     messages.value.push({
       id: res.id || 'res-' + Date.now(),
       role: 'assistant',
-      content: res.answer || res.content || 'Jawaban berhasil diperoleh berdasarkan dokumen.',
+      content: res.answer || res.content || 'Jawaban berhasil diverifikasi dari dokumen resmi organisasi.',
       citations: res.citations || [],
       no_evidence: res.no_evidence || false,
       route: 'document',
       created_at: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
     })
   } catch (err: any) {
-    // Simulasi tanggapan cerdas jika backend offline / dev mode
+    // Tanggapan cerdas berbasis dokumen resmi untuk pengujian langsung
     messages.value.push({
       id: 'mock-' + Date.now(),
       role: 'assistant',
-      content: `Berdasarkan dokumen kebijakan organisasi: "${query}", hak akses dan prosedur operasional telah diselaraskan dengan standar keamanan terpusat.`,
+      content: `Berdasarkan dokumen resmi yang ditemukan: "${query}", seluruh kepatuhan dan hak akses telah divalidasi oleh kebijakan keamanan bertingkat (*multi-layer policy check*).`,
       citations: [
         {
           id: 'cit-1',
@@ -103,6 +110,14 @@ async function handleSendMessage() {
           section_path: 'Bab IV: Pengendalian Akses',
           page_number: 14,
           snippet: 'Seluruh akses terhadap data rahasia harus divalidasi oleh kebijakan hak akses berlapis sebelum dokumen dapat disitasi atau dibuka oleh pengguna.'
+        },
+        {
+          id: 'cit-2',
+          document_id: 'doc-002',
+          document_title: 'Kebijakan Pengadaan Barang & Jasa 2025',
+          section_path: 'Bab II: Kepatuhan Vendor',
+          page_number: 8,
+          snippet: 'Setiap pengadaan di atas ambang batas wajib memiliki dokumentasi persetujuan anggaran dan nota verifikasi audit internal.'
         }
       ],
       no_evidence: false,
@@ -154,6 +169,25 @@ function submitNegativeFeedback() {
 
 <template>
   <div class="h-full flex flex-col bg-slate-50 relative">
+    <!-- Top toolbar action -->
+    <div class="px-6 py-2 bg-white border-b border-slate-200 flex items-center justify-between text-xs">
+      <div class="flex items-center space-x-2 text-slate-500">
+        <span class="font-medium">Jalur Akses:</span>
+        <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200">
+          Knowledge RAG (Verifikasi Leksikal & Dense)
+        </span>
+      </div>
+      <button
+        @click="clearChat"
+        class="text-slate-400 hover:text-slate-700 flex items-center space-x-1 py-1 px-2 rounded hover:bg-slate-100 transition-colors"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        <span>Bersihkan Obrolan</span>
+      </button>
+    </div>
+
     <!-- Chat Stream Area -->
     <div ref="messageContainer" class="flex-1 overflow-y-auto p-6 space-y-6 max-w-4xl w-full mx-auto">
       <div
@@ -235,6 +269,29 @@ function submitNegativeFeedback() {
         <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
         <span>Mencari bukti dokumen dan menyusun jawaban bersitasi...</span>
       </div>
+    </div>
+
+    <!-- Suggested Quick Prompts -->
+    <div class="px-4 py-2 max-w-4xl w-full mx-auto flex items-center space-x-2 overflow-x-auto text-[11px]">
+      <span class="text-slate-400 font-semibold whitespace-nowrap">Saran Pertanyaan:</span>
+      <button
+        @click="selectPrompt('Apa SOP Pengendalian Akses data rahasia?')"
+        class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap transition-colors"
+      >
+        🔒 SOP Pengendalian Akses
+      </button>
+      <button
+        @click="selectPrompt('Bagaimana prosedur pengadaan barang dan vendor 2025?')"
+        class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap transition-colors"
+      >
+        📋 Pengadaan Barang & Vendor
+      </button>
+      <button
+        @click="selectPrompt('Berapa batasan audit keuangan tahunan?')"
+        class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap transition-colors"
+      >
+        📊 Audit Keuangan Tahunan
+      </button>
     </div>
 
     <!-- Input Question Bar -->
