@@ -14,8 +14,8 @@ secrets/
 deploy/secrets/
 
 # Dependencies
-/vendor/
-/node_modules/
+vendor/
+node_modules/
 __pycache__/
 *.py[cod]
 *$py.class
