@@ -1,0 +1,55 @@
+[
+    {
+        "id": "doc-001",
+        "title": "SOP Tata Kelola Keamanan Informasi v2.1",
+        "file_name": "sop_keamanan_v2.1.pdf",
+        "status": "active",
+        "version": "v2.1",
+        "effective_date": "2025-01-10",
+        "principals": [
+            "role:org_admin",
+            "role:knowledge_manager",
+            "unit:teknologi"
+        ],
+        "created_at": "2025-01-10"
+    },
+    {
+        "id": "doc-002",
+        "title": "Kebijakan Pengadaan Barang & Jasa 2025",
+        "file_name": "kebijakan_pengadaan_2025.docx",
+        "status": "active",
+        "version": "v1.0",
+        "effective_date": "2025-02-01",
+        "principals": [
+            "all"
+        ],
+        "created_at": "2025-02-01"
+    },
+    {
+        "id": "doc-003",
+        "title": "SOP Manajemen Kepegawaian & Hak Cuti 2025",
+        "file_name": "sop_kepegawaian_cuti_2025.pdf",
+        "status": "active",
+        "version": "v1.2",
+        "effective_date": "2025-01-05",
+        "principals": [
+            "all",
+            "unit:sdm"
+        ],
+        "created_at": "2025-01-05"
+    },
+    {
+        "id": "doc-004",
+        "title": "Pedoman Pengelolaan Keuangan & Audit 2024",
+        "file_name": "pedoman_keuangan_2024.pdf",
+        "status": "active",
+        "version": "v1.0",
+        "effective_date": "2025-01-20",
+        "principals": [
+            "role:org_admin",
+            "role:data_analyst",
+            "unit:keuangan"
+        ],
+        "created_at": "2025-01-20"
+    }
+]
