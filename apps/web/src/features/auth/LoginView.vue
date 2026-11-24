@@ -44,6 +44,7 @@ async function handleLogin() {
 }
 
 function fillDemo(role: 'admin' | 'analyst' | 'user') {
+  errorMessage.value = ''
   if (role === 'admin') {
     email.value = 'admin@ekaa.internal'
     password.value = 'AdminPass123!'
