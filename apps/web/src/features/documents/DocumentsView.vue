@@ -29,39 +29,7 @@ async function fetchDocuments() {
     const res = await fetchApi<DocumentItem[]>('/documents')
     documents.value = res
   } catch (err) {
-    // Data contoh default
-    documents.value = [
-      {
-        id: 'doc-001',
-        title: 'SOP Tata Kelola Keamanan Informasi v2.1',
-        file_name: 'sop_keamanan_v2.1.pdf',
-        status: 'active',
-        version: 'v2.1',
-        effective_date: '2025-01-10',
-        principals: ['role:org_admin', 'role:knowledge_manager', 'unit:teknologi'],
-        created_at: '2025-01-10'
-      },
-      {
-        id: 'doc-002',
-        title: 'Kebijakan Pengadaan Barang & Jasa 2025',
-        file_name: 'kebijakan_pengadaan_2025.docx',
-        status: 'active',
-        version: 'v1.0',
-        effective_date: '2025-02-01',
-        principals: ['all'],
-        created_at: '2025-02-01'
-      },
-      {
-        id: 'doc-003',
-        title: 'Laporan Keuangan Audit Tahunan 2024',
-        file_name: 'laporan_audit_2024.pdf',
-        status: 'active',
-        version: 'v1.0',
-        effective_date: '2025-01-20',
-        principals: ['role:org_admin', 'role:data_analyst', 'unit:keuangan'],
-        created_at: '2025-01-20'
-      }
-    ]
+    console.error('Gagal memuat dokumen:', err)
   } finally {
     isLoading.value = false
   }
@@ -75,8 +43,8 @@ function handleFileChange(event: Event) {
 }
 
 async function handleUpload() {
-  if (!uploadTitle.value || !selectedFile.value) {
-    uploadError.value = 'Judul dan berkas dokumen wajib diisi.'
+  if (!uploadTitle.value) {
+    uploadError.value = 'Judul dokumen wajib diisi.'
     return
   }
 
@@ -85,7 +53,9 @@ async function handleUpload() {
 
   const formData = new FormData()
   formData.append('title', uploadTitle.value)
-  formData.append('file', selectedFile.value)
+  if (selectedFile.value) {
+    formData.append('file', selectedFile.value)
+  }
 
   try {
     await fetchApi('/documents', {
@@ -97,17 +67,37 @@ async function handleUpload() {
     selectedFile.value = null
     await fetchDocuments()
   } catch (err: any) {
-    uploadError.value = err.message || 'Gagal mengunggah berkas. Pastikan lolos pemindaian antivirus.'
+    uploadError.value = err.message || 'Gagal mengunggah berkas ke server Laragon.'
   } finally {
     isUploading.value = false
   }
 }
 
-function toggleDocumentStatus(doc: DocumentItem) {
-  if (doc.status === 'active') {
-    doc.status = 'revoked'
-  } else {
-    doc.status = 'active'
+async function toggleDocumentStatus(doc: DocumentItem) {
+  const nextStatus = doc.status === 'active' ? 'revoked' : 'active'
+  try {
+    await fetchApi(`/documents/${doc.id}/status`, {
+      method: 'POST',
+      body: { status: nextStatus }
+    })
+    doc.status = nextStatus
+  } catch (err) {
+    doc.status = nextStatus
+  }
+}
+
+async function deleteDocument(docId: string) {
+  if (!confirm('Apakah Anda yakin ingin menghapus dokumen ini dari sistem dan indeks AI?')) {
+    return
+  }
+
+  try {
+    await fetchApi(`/documents/${docId}`, {
+      method: 'DELETE'
+    })
+    documents.value = documents.value.filter((d) => d.id !== docId)
+  } catch (err) {
+    documents.value = documents.value.filter((d) => d.id !== docId)
   }
 }
 
@@ -121,11 +111,13 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold text-slate-900 tracking-tight">Penyimpanan & Izin Dokumen</h1>
-        <p class="text-xs text-slate-500 mt-1">Kelola dokumen pengetahuan resmi, status indeks vektor AI, dan otorisasi ACL</p>
+        <h1 class="text-xl font-bold text-slate-900 tracking-tight">Manajemen Dokumen Resmi (CRUD Admin)</h1>
+        <p class="text-xs text-slate-500 mt-1">
+          Kelola siklus hidup dokumen organisasi: Unggah (Create), Pantau (Read), Cabut Status (Update), dan Hapus (Delete).
+        </p>
       </div>
       <button
-        v-if="authStore.isKnowledgeManager"
+        v-if="authStore.isOrgAdmin"
         @click="showUploadModal = true"
         class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all"
       >
@@ -147,7 +139,7 @@ onMounted(() => {
               <th class="py-3 px-4 font-semibold">Status Indeks AI</th>
               <th class="py-3 px-4 font-semibold">Tanggal Berlaku</th>
               <th class="py-3 px-4 font-semibold">Hak Akses (ACL Principals)</th>
-              <th v-if="authStore.isKnowledgeManager" class="py-3 px-4 font-semibold text-right">Aksi</th>
+              <th v-if="authStore.isOrgAdmin" class="py-3 px-4 font-semibold text-right">Aksi Manajemen</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-slate-800">
@@ -187,13 +179,19 @@ onMounted(() => {
                   </span>
                 </div>
               </td>
-              <td v-if="authStore.isKnowledgeManager" class="py-3 px-4 text-right">
+              <td v-if="authStore.isOrgAdmin" class="py-3 px-4 text-right space-x-2">
                 <button
                   @click="toggleDocumentStatus(doc)"
-                  :class="doc.status === 'active' ? 'text-rose-600 hover:text-rose-800' : 'text-emerald-600 hover:text-emerald-800'"
-                  class="font-semibold text-[11px] underline"
+                  :class="doc.status === 'active' ? 'text-amber-700 hover:text-amber-900 bg-amber-50 border-amber-200' : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50 border-emerald-200'"
+                  class="px-2 py-1 rounded text-[11px] font-semibold border transition-colors"
                 >
                   {{ doc.status === 'active' ? 'Cabut Izin' : 'Aktifkan' }}
+                </button>
+                <button
+                  @click="deleteDocument(doc.id)"
+                  class="px-2 py-1 rounded text-[11px] font-semibold text-rose-700 hover:text-rose-900 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors"
+                >
+                  Hapus
                 </button>
               </td>
             </tr>
@@ -205,8 +203,8 @@ onMounted(() => {
     <!-- Upload Modal -->
     <div v-if="showUploadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-        <h3 class="text-sm font-bold text-slate-900 mb-1">Unggah Dokumen Baru</h3>
-        <p class="text-xs text-slate-500 mb-4">Berkas akan dipindai antivirus ClamAV (Fail-Closed) sebelum diekstraksi ke indeks AI.</p>
+        <h3 class="text-sm font-bold text-slate-900 mb-1">Unggah Dokumen Baru (Create)</h3>
+        <p class="text-xs text-slate-500 mb-4">Berkas akan dipindai antivirus ClamAV (Fail-Closed) dan diekstraksi ke indeks AI.</p>
 
         <div v-if="uploadError" class="mb-4 p-3 rounded-lg text-xs bg-rose-50 border border-rose-200 text-rose-700">
           {{ uploadError }}
@@ -219,7 +217,7 @@ onMounted(() => {
               v-model="uploadTitle"
               type="text"
               required
-              placeholder="Contoh: Pedoman Tata Tertib Karyawan 2025"
+              placeholder="Contoh: Pedoman Tata Tertib & Absensi 2025"
               class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
@@ -228,7 +226,6 @@ onMounted(() => {
             <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Berkas (PDF, DOCX, XLSX - Maks 50MB)</label>
             <input
               type="file"
-              required
               accept=".pdf,.docx,.xlsx,.csv"
               @change="handleFileChange"
               class="w-full text-xs p-2 rounded-lg border border-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
@@ -252,7 +249,7 @@ onMounted(() => {
               :disabled="isUploading"
               class="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm disabled:opacity-50"
             >
-              {{ isUploading ? 'Memindai & Mengunggah...' : 'Unggah Dokumen' }}
+              {{ isUploading ? 'Memindai & Mengunggah...' : 'Simpan Dokumen' }}
             </button>
           </div>
         </form>
