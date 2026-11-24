@@ -15,6 +15,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value && !!getAccessToken())
   const isLoading = ref(false)
   const mustChangePassword = ref(false)
+  const hasCheckedInitialSession = ref(false)
+  const isExplicitlyLoggedOut = ref(false)
 
   const roles = computed(() => user.value?.roles || [])
   const isOrgAdmin = computed(() => roles.value.includes('org_admin'))
@@ -24,6 +26,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(email: string, password: string) {
     isLoading.value = true
+    isExplicitlyLoggedOut.value = false
+    hasCheckedInitialSession.value = true
+
     try {
       const res = await fetchApi<{
         access_token: string
@@ -61,11 +66,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkSession() {
+    if (isExplicitlyLoggedOut.value || hasCheckedInitialSession.value) {
+      return false
+    }
+    hasCheckedInitialSession.value = true
+
     try {
       // Coba refresh token diam-diam lewat cookie
       const res = await fetchApi<{ access_token: string }>('/auth/refresh', {
         method: 'POST'
       })
+      if (!res || !res.access_token) {
+        throw new Error('Sesi tidak valid')
+      }
       setAccessToken(res.access_token)
       await fetchMe()
       return true
@@ -77,6 +90,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    isExplicitlyLoggedOut.value = true
+    hasCheckedInitialSession.value = true
+
     try {
       if (getAccessToken()) {
         await fetchApi('/auth/logout', { method: 'POST' })
@@ -95,6 +111,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isLoading,
     mustChangePassword,
+    hasCheckedInitialSession,
+    isExplicitlyLoggedOut,
     roles,
     isOrgAdmin,
     isKnowledgeManager,
